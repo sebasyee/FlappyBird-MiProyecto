@@ -1,3 +1,15 @@
+// --- CARGA DE ASSETS (Imágenes) ---
+let imgFondo;
+let imgRampa;
+let imgSkater;
+let imgTuberia;
+
+function preload() {
+  imgFondo = loadImage('assets/Background_UnderSurface.jpg');
+  imgRampa = loadImage('assets/Rampa.png');
+  imgSkater = loadImage('assets/Skater_DespuesSalto.png');
+  imgTuberia = loadImage('assets/Tuberia_derecha.jpg');
+}
 // ==========================================
 // 1. VARIABLES GLOBALES Y ESTADOS DEL JUEGO
 // ==========================================
@@ -31,6 +43,8 @@ let particulas = [];
 // Puntuaciones
 let puntuacion = 0;
 let puntuacionMaxima = 0;
+
+
 
 // ==========================================
 // 2. SETUP Y LOOP PRINCIPAL
@@ -82,30 +96,13 @@ function keyPressed() {
 // 4. FONDO Y AMBIENTACIÓN (Alcantarillas NY)
 // ==========================================
 function renderizarFondo() {
-  // 1. Pared de Ladrillos
-  background(40, 30, 25);
-  stroke(25, 18, 14);
-  strokeWeight(2);
-  let anchoLadrillo = 50;
-  let altoLadrillo = 20;
+  // Dibujar imagen de fondo cubriendo todo el canvas
+  image(imgFondo, 0, 0, width, height);
 
-  for (let y = 0; y < height - altoAguaToxica; y += altoLadrillo) {
-    let offsetFila = (floor(y / altoLadrillo) % 2 === 0) ? 0 : anchoLadrillo / 2;
-    for (let x = -anchoLadrillo; x < width + anchoLadrillo; x += anchoLadrillo) {
-      fill(60, 42, 35);
-      rect(x + offsetFila, y, anchoLadrillo, altoLadrillo);
-    }
-  }
-
-  // Tubería decorativa del techo
-  fill(30, 30, 35);
-  stroke(10);
-  rect(0, 0, width, 12);
-
-  // 2. Agua Tóxica en el suelo (Verde Neón Animado)
+  // Mantener el agua tóxica animada en la parte inferior sobre el fondo
   offsetAgua += 0.05;
   noStroke();
-  fill(50, 205, 50);
+  fill(50, 205, 50, 200);
 
   beginShape();
   vertex(0, height);
@@ -115,37 +112,13 @@ function renderizarFondo() {
   }
   vertex(width, height);
   endShape(CLOSE);
-
-  // Resplandor de la toxina
-  fill(150, 255, 150, 70);
-  rect(0, height - altoAguaToxica + 4, width, 5);
-}
-
-// ==========================================
-// 5. CINEMÁTICA DE INICIO (Rampa + Skater)
-// ==========================================
-function reiniciarCinematica() {
-  skaterIntro.x = -50;
-  skaterIntro.y = height - altoAguaToxica - 15;
-  skaterIntro.vx = 5.5;
-  skaterIntro.vy = 0;
-  skaterIntro.enRampa = false;
-  skaterIntro.saltando = false;
-  skaterIntro.angulo = 0;
-  skaterIntro.sprayActivo = false;
-  particulas = [];
 }
 
 function dibujarRampa() {
-  fill(100, 90, 85);
-  stroke(0);
-  strokeWeight(2);
-  // Rampa curvada de alcantarilla
-  beginShape();
-  vertex(rampaX, height - altoAguaToxica);
-  quadraticVertex(rampaX + 50, height - altoAguaToxica, rampaX + 70, height - altoAguaToxica - 50);
-  vertex(rampaX + 70, height - altoAguaToxica);
-  endShape(CLOSE);
+  // Ajusta el ancho y alto según las dimensiones de tu imagen de rampa
+  let anchoRampa = 80;
+  let altoRampa = 60;
+  image(imgRampa, rampaX, height - altoAguaToxica - altoRampa, anchoRampa, altoRampa);
 }
 
 function actualizarCinematica() {
@@ -357,44 +330,15 @@ class Skater {
 }
 
 // Función auxiliar para dibujar la ilustración del skater
-function dibujarSkaterSprite(px, py, conLatas) {
+function dibujarSkaterSprite(px, py) {
   push();
   translate(px, py);
-
-  // 1. Skateboard
-  fill(40);
-  stroke(0);
-  strokeWeight(1.5);
-  rect(-18, 12, 36, 6, 2); // Tabla
-  fill(200);
-  ellipse(-10, 19, 6, 6); // Rueda izq
-  ellipse(10, 19, 6, 6);  // Rueda der
-
-  // 2. Niño Skater (Cuerpo y Gorra)
-  fill(220, 50, 50); // Sudadera roja
-  rect(-10, -8, 20, 18, 4);
-
-  fill(255, 200, 160); // Cabeza
-  ellipse(0, -14, 16, 16);
-
-  fill(30, 140, 220); // Gorra azul hacia atrás
-  arc(0, -16, 18, 14, PI, TWO_PI);
-  rect(-12, -17, 8, 3); // Visera
-
-  // 3. Latas de Spray como propulsores
-  if (conLatas) {
-    fill(180);
-    stroke(0);
-    rect(-14, -2, 6, 12); // Lata 1
-    rect(8, -2, 6, 12);  // Lata 2
-    fill(255, 0, 128);   // Tapa neón
-    rect(-14, -5, 6, 3);
-    rect(8, -5, 6, 3);
-  }
-
+  imageMode(CENTER); // Centra la imagen para rotaciones fluidas
+  
+  // Dibujar la imagen del skater (ajusta el tamaño 50x50 si es necesario)
+  image(imgSkater, 0, 0, 50, 50);
   pop();
 }
-
 // ==========================================
 // 9. CLASE COLUMNA (Tuberías Oxidadas que se Cierran y Rebotan)
 // ==========================================
@@ -448,27 +392,15 @@ class Columna {
   }
 
   mostrar() {
-    stroke(15);
-    strokeWeight(2);
-    fill(85, 75, 70); // Metal industrial base
+    // Tubería Superior (dibujada desde y=0 hasta y=top)
+    push();
+    image(imgTuberia, this.x, 0, this.ancho, this.top);
+    pop();
 
-    // Tubo superior e inferior
-    rect(this.x, 0, this.ancho, this.top);
-    rect(this.x, height - this.bottom, this.ancho, this.bottom);
-
-    // Detalle de Óxido
-    fill(170, 75, 30);
-    noStroke();
-    rect(this.x + 8, this.top * 0.2, 16, this.top * 0.5);
-    rect(this.x + 10, height - this.bottom + 15, 20, 30);
-
-    // Boquillas metálicas gruesas
-    stroke(15);
-    strokeWeight(2);
-    fill(110, 100, 95);
-    let altoBoquilla = 16;
-    rect(this.x - 4, this.top - altoBoquilla, this.ancho + 8, altoBoquilla);
-    rect(this.x - 4, height - this.bottom, this.ancho + 8, altoBoquilla);
+    // Tubería Inferior (dibujada desde la apertura hasta el suelo)
+    push();
+    image(imgTuberia, this.x, height - this.bottom, this.ancho, this.bottom);
+    pop();
   }
 
   estaFuera() {
@@ -521,4 +453,15 @@ class ParticulaSpray {
   estaMuerta() {
     return this.alpha <= 0;
   }
+}
+function reiniciarCinematica() {
+  skaterIntro.x = -50;
+  skaterIntro.y = height - altoAguaToxica - 15;
+  skaterIntro.vx = 5.5;
+  skaterIntro.vy = 0;
+  skaterIntro.enRampa = false;
+  skaterIntro.saltando = false;
+  skaterIntro.angulo = 0;
+  skaterIntro.sprayActivo = false;
+  particulas = [];
 }
