@@ -13,6 +13,11 @@ let frecuenciaColumnas = 120; // Crea una columna nueva cada 120 frames
 let puntuacion = 0;
 let puntuacionMaxima = 0;
 
+let cohetes = [];
+let modoCohete = false;
+let tiempoCoheteRestante = 0;
+let duracionCohete = 300; // 300 fotogramas = 5 segundos a 60 fps
+
 // ==========================================
 // 2. SETUP Y LOOP PRINCIPAL
 // ==========================================
@@ -173,10 +178,32 @@ class Jugador {
   }
 
   mostrar() {
-    fill(255, 220, 0); // Color amarillo
+    push(); // 1. Guarda el estado del lienzo
+    translate(this.x, this.y); // 2. Mueve el punto de origen al centro del personaje
+
+    // 3. Convierte la velocidad vertical en un ángulo
+    // Si la velocidad es -9 (saltando), el ángulo es -30 grados (mira arriba).
+    // Si la velocidad es 10 (cayendo), el ángulo es 70 grados (mira abajo).
+    let angulo = map(this.velocidad, -9, 10, -radians(30), radians(70));
+    angulo = constrain(angulo, -radians(30), radians(70)); // Evita rotaciones excesivas
+    
+    rotate(angulo); // 4. Aplica la rotación
+
+    // 5. Dibuja el personaje centrado en (0, 0)
+    fill(255, 220, 0); // Amarillo
     stroke(0);
     strokeWeight(2);
-    ellipse(this.x, this.y, this.tamano);
+    ellipse(0, 0, this.tamano);
+
+    // Ojo y pico sencillo para saber hacia dónde mira el personaje
+    fill(255);
+    ellipse(6, -4, 8, 8); // Ojo
+    fill(0);
+    ellipse(8, -4, 3, 3); // Pupila
+    fill(255, 100, 0);
+    triangle(10, 0, 18, 4, 10, 6); // Pico
+
+    pop(); // 6. Restaura el lienzo a su estado original
   }
 
   tocaLimites() {
@@ -269,5 +296,41 @@ class Columna {
       }
     }
     return false;
+  }
+}
+// 7. CLASE COHETE 
+class Cohete {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.tamano = 25;
+    this.velocidad = 4; // Se mueve a la par de las columnas
+    this.recolectado = false;
+  }
+
+  actualizar() {
+    this.x -= this.velocidad;
+  }
+
+  mostrar() {
+    if (this.recolectado) return;
+    push();
+    translate(this.x, this.y);
+    // Dibujo del Cohete
+    fill(220, 20, 20); // Cuerpo rojo
+    stroke(0);
+    strokeWeight(1.5);
+    ellipse(0, 0, this.tamano, this.tamano / 1.5);
+    fill(255, 200, 0); // Punta amarilla
+    triangle(this.tamano / 2, -this.tamano / 4, this.tamano / 2 + 10, 0, this.tamano / 2, this.tamano / 4);
+    fill(255, 100, 0); // Fuego trasero
+    triangle(-this.tamano / 2, -5, -this.tamano / 2 - 8, 0, -this.tamano / 2, 5);
+    pop();
+  }
+
+  colisionaCon(p) {
+    if (this.recolectado) return false;
+    let d = dist(this.x, this.y, p.x, p.y);
+    return d < (this.tamano / 2 + p.tamano / 2);
   }
 }
