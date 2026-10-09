@@ -25,7 +25,7 @@ function preload() {
 
   //CARGAR POSES
   imgSkaterShoot = loadImage('assets/skater_shoot.png');
-  imgSkaterMid = loadImage('assets/skater_mid.jpg');
+  imgSkaterMid = loadImage('assets/skater_mid.png');
   imgSkaterDown = loadImage('assets/skater_down.png');
   imgSkaterDespuesSalto = loadImage('assets/Skater_DespuesSalto.png');
 }
@@ -71,7 +71,7 @@ let puntuacionMaxima = 0;
 // 2. SETUP Y LOOP PRINCIPAL
 // ==========================================
 function setup() {
-  createCanvas(800, 450); // Formato horizontal 16:9
+  createCanvas(1000, 550); // Formato horizontal 16:9
   jugador = new Skater();
   
   // Cargar récord guardado en el navegador
@@ -117,7 +117,24 @@ function keyPressed() {
 // 4. FONDO Y AMBIENTACIÓN (Alcantarillas NY)
 // ==========================================
 
+function renderizarFondo() {
+  // Fondo gris neutro para pruebas (puedes ajustar el 100 a otro número entre 0 y 255)
+  background(100);
 
+  // Mantenemos el agua tóxica animada en el suelo para seguir probando colisiones
+  offsetAgua += 0.05;
+  noStroke();
+  fill(50, 205, 50, 200); // Verde tóxico
+
+  beginShape();
+  vertex(0, height);
+  for (let x = 0; x <= width; x += 20) {
+    let y = height - altoAguaToxica + sin(offsetAgua + x * 0.05) * 4;
+    vertex(x, y);
+  }
+  vertex(width, height);
+  endShape(CLOSE);
+}
 // Fondo oculto mientras hago pruebas
 /*function renderizarFondo() {
   image(imgFondo, 0, 0, width, height);
@@ -139,7 +156,7 @@ function keyPressed() {
 
 // Rampa
 function dibujarRampa() {
-  image(imgRampa, rampaX, height - altoAguaToxica - 50, 80, 50);
+  image(imgRampa, rampaX, height - 100, 130, 100);
 }
 
 function actualizarCinematica() {
@@ -149,7 +166,7 @@ function actualizarCinematica() {
     skaterIntro.x += skaterIntro.vx;
 
     // Cambia de frame cada 8 fotogramas (ajusta el 8 si quieres que corra más rápido/lento)
-    let frameActual = floor(frameCount / 8) % imgSkaterRun.length;
+    let frameActual = floor(frameCount / 10) % imgSkaterRun.length;
 
     push();
     translate(skaterIntro.x, skaterIntro.y);
