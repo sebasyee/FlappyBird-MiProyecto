@@ -1,15 +1,36 @@
 // --- CARGA DE ASSETS (Imágenes) ---
 let imgFondo;
 let imgRampa;
-let imgSkater;
 let imgTuberia;
 
+//ASSETS DE ANIMACION DE CARRERA DE SKATER
+let imgSkaterRun = [];
+
+//IMAGENES DE SKATER EN EL AIRE
+let imgSkaterDespuesSalto;
+let imgSkaterShoot;
+let imgSkaterMid;
+let imgSkaterDown;
+
 function preload() {
+  //CARGAR FONDO RAMPA Y TUBERIA
   imgFondo = loadImage('assets/Background_UnderSurface.jpg');
   imgRampa = loadImage('assets/Rampa.png');
-  imgSkater = loadImage('assets/Skater_DespuesSalto.png');
-  imgTuberia = loadImage('assets/Tuberia_derecha.jpg');
+  imgTuberia = loadImage('assets/Tuberia_derecha.png');
+
+  //CARGAR FRAMES DE LA CARRERA
+  imgSkaterRun[0] = loadImage('assets/skater_run/skater_run01.png');
+  imgSkaterRun[1] = loadImage('assets/skater_run/skater_run02.png');
+  imgSkaterRun[2] = loadImage('assets/skater_run/skater_run03.png');
+
+  //CARGAR POSES
+  imgSkaterShoot = loadImage('assets/skater_shoot.png');
+  imgSkaterMid = loadImage('assets/skater_mid.jpg');
+  imgSkaterDown = loadImage('assets/skater_down.png');
+  imgSkaterDespuesSalto = loadImage('assets/Skater_DespuesSalto.png');
 }
+
+
 // ==========================================
 // 1. VARIABLES GLOBALES Y ESTADOS DEL JUEGO
 // ==========================================
@@ -21,7 +42,7 @@ let columnas = [];
 let frecuenciaColumnas = 90; // Nueva columna cada ~1.5 segundos
 
 // Estética de Alcantarilla y Aguas Tóxicas
-let altoAguaToxica = 35;
+let altoAguaToxica = 30;
 let offsetAgua = 0;
 
 // Cinemática de Inicio (Skater en Rampa)
@@ -95,11 +116,13 @@ function keyPressed() {
 // ==========================================
 // 4. FONDO Y AMBIENTACIÓN (Alcantarillas NY)
 // ==========================================
-function renderizarFondo() {
-  // Dibujar imagen de fondo cubriendo todo el canvas
+
+
+// Fondo oculto mientras hago pruebas
+/*function renderizarFondo() {
   image(imgFondo, 0, 0, width, height);
 
-  // Mantener el agua tóxica animada en la parte inferior sobre el fondo
+  // Mantenemos el agua tóxica sobre el fondo
   offsetAgua += 0.05;
   noStroke();
   fill(50, 205, 50, 200);
@@ -112,67 +135,69 @@ function renderizarFondo() {
   }
   vertex(width, height);
   endShape(CLOSE);
-}
+}*/
 
+// Rampa
 function dibujarRampa() {
-  // Ajusta el ancho y alto según las dimensiones de tu imagen de rampa
-  let anchoRampa = 80;
-  let altoRampa = 60;
-  image(imgRampa, rampaX, height - altoAguaToxica - altoRampa, anchoRampa, altoRampa);
+  image(imgRampa, rampaX, height - altoAguaToxica - 50, 80, 50);
 }
 
 function actualizarCinematica() {
   dibujarRampa();
 
-  // Movimiento del skater
   if (!skaterIntro.saltando) {
     skaterIntro.x += skaterIntro.vx;
-    // Al tocar la rampa, despega
+
+    // Cambia de frame cada 8 fotogramas (ajusta el 8 si quieres que corra más rápido/lento)
+    let frameActual = floor(frameCount / 8) % imgSkaterRun.length;
+
+    push();
+    translate(skaterIntro.x, skaterIntro.y);
+    imageMode(CENTER);
+    image(imgSkaterRun[frameActual], 0, 0, 65, 65); // Dibujar frame actual
+    pop();
+
     if (skaterIntro.x >= rampaX) {
-      skaterIntro.vy = -10; // Impulso hacia arriba
+      skaterIntro.vy = -10;
       skaterIntro.saltando = true;
       skaterIntro.sprayActivo = true;
     }
   } else {
-    // Física del salto
+    // Salto en la rampa
     skaterIntro.x += skaterIntro.vx * 0.6;
     skaterIntro.vy += 0.4;
     skaterIntro.y += skaterIntro.vy;
-    skaterIntro.angulo = lerp(skaterIntro.angulo, -radians(25), 0.1);
 
-    // Generar partículas de spray al volar
+    // Dibujar la pose de despegue durante el salto de la intro
+    push();
+    translate(skaterIntro.x, skaterIntro.y);
+    imageMode(CENTER);
+    image(imgSkaterShoot, 0, 0, 65, 65);
+    pop();
+
     if (skaterIntro.sprayActivo) {
       particulas.push(new ParticulaSpray(skaterIntro.x - 15, skaterIntro.y + 5));
     }
 
-    // TRANSICIÓN AUTOMÁTICA: En cuanto alcanza la X del jugador (120px) o el punto alto del salto
     if (skaterIntro.x >= jugador.x) {
       jugador.x = 120;
       jugador.y = skaterIntro.y;
       jugador.velocidad = skaterIntro.vy;
-      estadoJuego = "JUGANDO"; // Activa el juego base
-    }
-    // Si cae al agua durante la cinemática por no presionar espacio, muestra Game Over
-    if (skaterIntro.y >= height - altoAguaToxica) {
-      estadoJuego = "GAMEOVER";
+      estadoJuego = "JUGANDO";
     }
   }
 
-  // Dibujar al skater durante la animación
-  push();
-  translate(skaterIntro.x, skaterIntro.y);
-  rotate(skaterIntro.angulo);
-  dibujarSkaterSprite(0, 0, skaterIntro.sprayActivo);
-  pop();
-
-  // Actualizar partículas
+  // Partículas y límites
   for (let i = particulas.length - 1; i >= 0; i--) {
     particulas[i].actualizar();
     particulas[i].mostrar();
     if (particulas[i].estaMuerta()) particulas.splice(i, 1);
   }
-}
 
+  if (skaterIntro.y >= height - altoAguaToxica) {
+    estadoJuego = "GAMEOVER";
+  }
+}
 // ==========================================
 // 6. LÓGICA DEL JUEGO EN EJECUCIÓN
 // ==========================================
@@ -311,18 +336,32 @@ class Skater {
     }
   }
 
-  mostrar() {
-    push();
-    translate(this.x, this.y);
+  // Dentro de la clase Skater:
+mostrar() {
+  push();
+  translate(this.x, this.y);
 
-    // Calcular inclinación según la velocidad
-    let angulo = map(this.velocidad, -9.5, 10, -radians(30), radians(60));
-    angulo = constrain(angulo, -radians(30), radians(60));
-    rotate(angulo);
+  // Inclinación
+  let angulo = map(this.velocidad, -9.5, 10, -radians(25), radians(55));
+  angulo = constrain(angulo, -radians(25), radians(55));
+  rotate(angulo);
 
-    dibujarSkaterSprite(0, 0, true);
-    pop();
+  imageMode(CENTER);
+
+  // SELECCIONAR IMAGEN SEGÚN EL MOVIMIENTO
+  if (this.velocidad < -3) {
+    // Impulso hacia arriba al presionar Espacio
+    image(imgSkaterShoot, 0, 0, 65, 65);
+  } else if (this.velocidad >= -3 && this.velocidad <= 3) {
+    // Punto medio del salto / Planeando
+    image(imgSkaterMid, 0, 0, 65, 65);
+  } else {
+    // Caída en picada por la gravedad
+    image(imgSkaterDown, 0, 0, 65, 65);
   }
+
+  pop();
+}
 
   tocaLimites() {
     return (this.y + this.tamano / 2 >= height - altoAguaToxica);
@@ -392,17 +431,12 @@ class Columna {
   }
 
   mostrar() {
-    // Tubería Superior (dibujada desde y=0 hasta y=top)
-    push();
-    image(imgTuberia, this.x, 0, this.ancho, this.top);
-    pop();
-
-    // Tubería Inferior (dibujada desde la apertura hasta el suelo)
-    push();
-    image(imgTuberia, this.x, height - this.bottom, this.ancho, this.bottom);
-    pop();
-  }
-
+  // Tubería Superior
+  image(imgTuberia, this.x, 0, this.ancho, this.top);
+  
+  // Tubería Inferior
+  image(imgTuberia, this.x, height - this.bottom, this.ancho, this.bottom);
+}
   estaFuera() {
     return (this.x + this.ancho < 0);
   }
