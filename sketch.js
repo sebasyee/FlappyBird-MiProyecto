@@ -1,8 +1,10 @@
 // --- CARGA DE ASSETS (Imágenes) ---
 let imgFondo;
 let imgRampa;
-let imgTuberia;
 let imgPlataforma;
+let imgTuberiaAbiertaAbajo;
+let imgTuberiaDerechaAbajo;
+let imgTuberiaDerechaArriba;
 
 //ASSETS DE ANIMACION DE CARRERA DE SKATER
 let imgSkaterRun = [];
@@ -12,12 +14,17 @@ let imgSkaterDespuesSalto;
 let imgSkaterShoot;
 let imgSkaterDown;
 
+//Musica
+let musicaFondo;
+
 function preload() {
   //CARGAR FONDO RAMPA Y TUBERIA
   imgFondo = loadImage('assets/Background_UnderSurface.jpg');
   imgRampa = loadImage('assets/Rampa.png');
-  imgTuberia = loadImage('assets/Tuberia_derecha.png');
   imgPlataforma = loadImage('assets/plataforma.png');
+  imgTuberiaAbiertaAbajo = loadImage('assets/Tuberia_abiertaAbajo.png');
+  imgTuberiaDerechaAbajo = loadImage('assets/Tuberia_derechaAbajo.png');
+  imgTuberiaDerechaArriba = loadImage('assets/Tuberia_derechaArriba.png');
 
   //CARGAR FRAMES DE LA CARRERA
   imgSkaterRun[0] = loadImage('assets/skater_run/skater_run01.png');
@@ -28,6 +35,10 @@ function preload() {
   imgSkaterShoot = loadImage('assets/skater_shoot.png');
   imgSkaterDown = loadImage('assets/skater_down.png');
   imgSkaterDespuesSalto = loadImage('assets/Skater_DespuesSalto.png');
+
+  //Musica de fondo
+  musicaFondo = loadSound('assets/musicaFondo.mp3');
+
 }
 
 
@@ -40,6 +51,7 @@ let estadoJuego = "INICIO"; // Estados: "INICIO", "CINEMATICA", "JUGANDO", "GAME
 let jugador;
 let columnas = [];
 let frecuenciaColumnas = 90; // Nueva columna cada ~1.5 segundos
+let indicePatronAbajo = 0; // <--- Declara esta variable globalmente arriba del todo
 
 // Estética de Alcantarilla y Aguas Tóxicas
 let altoAguaToxica = 30;
@@ -67,6 +79,8 @@ let puntuacionMaxima = 0;
 
 //posición de la rampa  
 let desplazamientoRampaX = 15;
+
+let musicaIniciada = false; // <--- Declárala aquí
 
 
 // ==========================================
@@ -102,18 +116,43 @@ function draw() {
 // ==========================================
 // 3. CONTROLES E INTERACCIÓN
 // ==========================================
+function mousePressed() {
+  userStartAudio().then(() => {
+    if (musicaFondo && !musicaFondo.isPlaying()) {
+      musicaFondo.loop();
+      musicaFondo.setVolume(0.5);
+    }
+});
+}
+
 function keyPressed() {
-  if (key === ' ') { // Tecla Espacio
+  userStartAudio().then(() => {
+    if (musicaFondo && !musicaFondo.isPlaying()) {
+      musicaFondo.loop();
+      musicaFondo.setVolume(0.5);
+    }
+  });
+
+  if (key === ' ') {
     if (estadoJuego === "INICIO") {
       estadoJuego = "CINEMATICA";
     } else if (estadoJuego === "JUGANDO") {
-      jugador.saltar();
+      if (typeof jugador !== 'undefined' && jugador.saltar) {
+        jugador.saltar();
+      }
     } else if (estadoJuego === "GAMEOVER") {
       reiniciarJuego();
       estadoJuego = "CINEMATICA";
     }
   }
 }
+
+  // 2. Activación de la música de fondo en el primer intento
+  if (!musicaIniciada && musicaFondo) {
+    musicaFondo.loop();
+    musicaFondo.setVolume(0.4);
+    musicaIniciada = true;
+  }
 
 // ==========================================
 // 4. FONDO Y AMBIENTACIÓN (Alcantarillas NY)
@@ -235,7 +274,7 @@ function actualizarCinematica() {
 // ==========================================
 function actualizarJuego() {
   // --- Generar nuevas columnas ---
-  if (frameCount % frecuenciaColumnas === 0) {
+  if (frameCount % 120 === 0) {
     columnas.push(new Columna());
   }
 
@@ -307,7 +346,7 @@ function pantallaInicio() {
   textAlign(CENTER, CENTER);
   
   textSize(42);
-  text("NY SEWER SKATER", width / 2, height / 3);
+  text("FLAPPY SKATE", width / 2, height / 3);
   
   fill(255);
   textSize(20);
@@ -325,7 +364,7 @@ function pantallaGameOver() {
   textAlign(CENTER, CENTER);
   
   textSize(42);
-  text("¡CAÍSTE EN LA TOXINA!", width / 2, height / 3);
+  text("GAME OVER", width / 2, height / 3);
   
   fill(255);
   textSize(22);
@@ -411,27 +450,22 @@ function dibujarSkaterSprite(px, py) {
   image(imgSkater, 0, 0, 50, 50);
   pop();
 }
-// ==========================================
-// CLASE COLUMNA (Ambas tuberías fijas en escala, sin flotar ni estirarse)
-// ==========================================
 class Columna {
   constructor() {
-    this.ancho = 65;
+    this.ancho = 95; 
     this.x = width;
     this.velocidad = 3.8;
     this.pasada = false;
 
-    // Espacio libre por donde cruza el jugador
-    this.espacioApertura = 130;
+    this.espacioApertura = 160;
 
-    // Determinamos el centro del hueco
-    let centroHueco = random(100, height - altoAguaToxica - 100);
+    let margenSuperior = 130;
+    let margenInferior = height - altoAguaToxica - 130;
+    let centroHueco = random(margenSuperior, margenInferior);
     
-    // Posiciones meta finales (Y superior e Y inferior)
     this.topMeta = centroHueco - (this.espacioApertura / 2);
-    this.bottomY = centroHueco + (this.espacioApertura / 2); // Posición donde inicia la apertura inferior
+    this.bottomY = centroHueco + (this.espacioApertura / 2);
 
-    // --- FÍSICA DE CAÍDA DE LA TUBERÍA SUPERIOR ---
     this.topY = -350; 
     this.vyTop = 0;           
     this.gravedadTop = 0.6;    
@@ -439,27 +473,43 @@ class Columna {
 
     this.fuerzaResorte = 0.25; 
     this.amortiguacion = 0.55; 
-
-    // Altura fija de las imágenes para evitar deformación y espacios vacíos
     this.altoFijo = 450; 
+
+    // Tuberías superiores (pueden seguir siendo aleatorias)
+    let listaTuberiasArriba = [
+      imgTuberiaDerechaArriba,
+      imgTuberiaDerechaAbajo
+    ];
+    this.imgTop = random(listaTuberiasArriba);
+
+    // --- PATRÓN ESTRICTO PARA LAS TUBERÍAS INFERIORES ---
+    // Patrón: [derechaAbajo, derechaAbajo, abiertaAbajo]
+    let patronAbajo = [
+      imgTuberiaDerechaAbajo,
+      imgTuberiaDerechaAbajo,
+      imgTuberiaAbiertaAbajo
+    ];
+
+    // Asignamos la imagen según el índice actual del patrón
+    this.imgBottom = patronAbajo[indicePatronAbajo];
+
+    // Avanzamos al siguiente elemento y reiniciamos el ciclo al llegar al final (3 elementos)
+    indicePatronAbajo = (indicePatronAbajo + 1) % patronAbajo.length;
   }
 
   actualizar() {
-    // 1. Movimiento horizontal
     this.x -= this.velocidad;
 
-    // 2. Caída e impacto de la tubería superior
     if (!this.impactado) {
       this.vyTop += this.gravedadTop;
       this.topY += this.vyTop;
 
       if (this.topY >= this.topMeta) {
         this.topY = this.topMeta;
-        this.vyTop = -this.vyTop * 0.45; // Rebote de impacto seco
+        this.vyTop = -this.vyTop * 0.45;
         this.impactado = true;
       }
     } else {
-      // Física de resorte post-impacto
       let delta = this.topY - this.topMeta;
       let fuerza = -this.fuerzaResorte * delta;
       this.vyTop += fuerza;
@@ -469,15 +519,12 @@ class Columna {
   }
 
   mostrar() {
-    // A. TUBERÍA SUPERIOR (Se dibuja desde topY hacia arriba)
     push();
-    image(imgTuberia, this.x, this.topY - this.altoFijo, this.ancho, this.altoFijo);
+    image(this.imgTop, this.x, this.topY - this.altoFijo, this.ancho, this.altoFijo);
     pop();
 
-    // B. TUBERÍA INFERIOR (Fija: inicia en bottomY y se extiende hacia abajo pasando el borde del canvas)
     push();
-    // Al darle un alto de this.altoFijo (450px), la imagen sobrepasa holgadamente el límite inferior de la pantalla
-    image(imgTuberia, this.x, this.bottomY, this.ancho, this.altoFijo);
+    image(this.imgBottom, this.x, this.bottomY, this.ancho, this.altoFijo);
     pop();
   }
 
@@ -486,16 +533,26 @@ class Columna {
   }
 
   colisionaCon(p) {
-    if (p.x + p.tamano / 2 > this.x && p.x - p.tamano / 2 < this.x + this.ancho) {
-      // Colisión precisa usando las coordenadas Y reales del hueco (topY y bottomY)
-      if (p.y - p.tamano / 2 < this.topY || p.y + p.tamano / 2 > this.bottomY) {
-        return true;
-      }
+    // Definimos un margen de tolerancia (en píxeles) para hacer la colisión más justa
+    let margenX = 15; // El skater puede "entrar" 15px en la tubería antes de morir
+    let margenY = 10; // Margen vertical superior/inferior
+
+    // Verificamos si el skater cruza la posición horizontal de la columna (con margen)
+    let colisionaX = (p.x + p.tamano / 2 - margenX > this.x) && 
+                     (p.x - p.tamano / 2 + margenX < this.x + this.ancho);
+
+    // Verificamos si choca con la tubería de arriba o con la de abajo (con margen)
+    let colisionaY = (p.y - p.tamano / 2 + margenY < this.topY) || 
+                     (p.y + p.tamano / 2 - margenY > this.bottomY);
+
+    // Si está en la columna y además toca la parte superior o inferior, hay muerte
+    if (colisionaX && colisionaY) {
+      return true;
     }
+    
     return false;
   }
 }
-
 // CLASE PARTÍCULA SPRAY (Verde Radiactivo)
 class ParticulaSpray {
   constructor(x, y) {
