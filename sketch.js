@@ -1,4 +1,4 @@
-// --- CARGA DE ASSETS (Imágenes) ---
+// ASSETS IMAGENES
 let imgFondo;
 let imgRampa;
 let imgPlataforma;
@@ -14,7 +14,7 @@ let imgSkaterDespuesSalto;
 let imgSkaterShoot;
 let imgSkaterDown;
 
-//Musica
+//MUSICA
 let musicaFondo;
 
 function preload() {
@@ -36,15 +36,14 @@ function preload() {
   imgSkaterDown = loadImage('assets/skater_down.png');
   imgSkaterDespuesSalto = loadImage('assets/Skater_DespuesSalto.png');
 
-  //Musica de fondo
+  //MUSICA DE FONDO
   musicaFondo = loadSound('assets/musicaFondo.mp3');
 
 }
 
 
-// ==========================================
-// 1. VARIABLES GLOBALES Y ESTADOS DEL JUEGO
-// ==========================================
+
+//VARIABLES GLOBALES Y ESTADOS DEL JUEGO
 let estadoJuego = "INICIO"; // Estados: "INICIO", "CINEMATICA", "JUGANDO", "GAMEOVER"
 
 // Personaje y Escenario
@@ -53,11 +52,10 @@ let columnas = [];
 let frecuenciaColumnas = 90; // Nueva columna cada ~1.5 segundos
 let indicePatronAbajo = 0; // <--- Declara esta variable globalmente arriba del todo
 
-// Estética de Alcantarilla y Aguas Tóxicas
 let altoAguaToxica = 30;
 let offsetAgua = 0;
 
-// Cinemática de Inicio (Skater en Rampa)
+// ANIMACION DE INCIO
 let skaterIntro = {
   x: -60,
   y: 0,
@@ -70,27 +68,24 @@ let skaterIntro = {
 };
 let rampaX = 400;
 
-// Sistema de Partículas (Humo/Graffiti de Spray)
+//  PARTICULAS
 let particulas = [];
 
-// Puntuaciones
+// PUNTUACIONES
 let puntuacion = 0;
 let puntuacionMaxima = 0;
 
-//posición de la rampa  
+//POSICION DE RAMPA EN X
 let desplazamientoRampaX = 15;
 
 let musicaIniciada = false; // <--- Declárala aquí
 
-
-// ==========================================
-// 2. SETUP Y LOOP PRINCIPAL
-// ==========================================
+// SETUP Y LOOP PRINCIPAL
 function setup() {
-  createCanvas(1000, 550); // Formato horizontal 16:9
+  createCanvas(1000, 550); // TAMAÑO PANTALLA
   jugador = new Skater();
   
-  // Cargar récord guardado en el navegador
+  // CCARGAR RECOR EN NAVEGADOR
   let guardado = localStorage.getItem("flappy_skater_max");
   if (guardado !== null) {
     puntuacionMaxima = parseInt(guardado);
@@ -113,9 +108,7 @@ function draw() {
   }
 }
 
-// ==========================================
-// 3. CONTROLES E INTERACCIÓN
-// ==========================================
+// CONTROLES E INTERACCIÓN
 function mousePressed() {
   userStartAudio().then(() => {
     if (musicaFondo && !musicaFondo.isPlaying()) {
@@ -147,32 +140,25 @@ function keyPressed() {
   }
 }
 
-  // 2. Activación de la música de fondo en el primer intento
+  // ACTIVAR MUSICA DE FONDO
   if (!musicaIniciada && musicaFondo) {
     musicaFondo.loop();
     musicaFondo.setVolume(0.4);
     musicaIniciada = true;
   }
 
-// ==========================================
-// 4. FONDO Y AMBIENTACIÓN (Alcantarillas NY)
-// ==========================================
-
-
-// Fondo oculto mientras hago pruebas
 function renderizarFondo() {
    image(imgFondo, 0, 0, width, height);
 
-  // 2. CAPA DE OSCURIDAD / POCA LUZ (Overlay oscuro)
-  // El último parámetro (150) es la opacidad: más alto = más oscuro (0 a 255)
-  fill(10, 15, 20, 160); 
+  // 2. CAPA DE OSCURIDAD 
+  fill(10, 15, 20, 160); //ULTIMO PARAMETRO INTENSIDAD
   rect(0, 0, width, height);
 
-  // 3. Agua tóxica (resalta más en la oscuridad)
+ // AGUA TOXICA
   offsetAgua += 0.05;
   noStroke();
 
-  // Brillo sutil para el agua en la penumbra
+  // BRILLO PARA AGUA
   drawingContext.shadowBlur = 15;
   drawingContext.shadowColor = color(50, 255, 50);
 
@@ -187,11 +173,10 @@ function renderizarFondo() {
   vertex(width, height);
   endShape(CLOSE);
 
-  // Desactivar el brillo para el resto de los elementos que se dibujen después
   drawingContext.shadowBlur = 0;
 }
 
-// Rampa
+// RAMPA
 function dibujarRampa() {
   let altoPlataforma = 45; 
   let anchoRampa = 300;     
@@ -199,17 +184,15 @@ function dibujarRampa() {
 
   let yPlataforma = height - altoAguaToxica - altoPlataforma;
 
-  // 1. La plataforma se extiende un poco más allá de rampaX para generar el traslape/encimado
-  let solapamiento = 300; // Píxeles que se meterá la plataforma por debajo de la rampa
+  let solapamiento = 300; // PIXELES ENCIMADOS
   let anchoPlataformaDibujo = rampaX + solapamiento;
 
-  // Dibujar la plataforma de concreto
+  // DIBUJAR PLATAFORMA
   image(imgPlataforma, 0, yPlataforma, anchoPlataformaDibujo, altoPlataforma + altoAguaToxica);
 
-  // 2. Posición de la rampa controlada con rampaX + desplazamientoRampaX
   let posXRampa = rampaX + desplazamientoRampaX;
   
-  // Dibujar la rampa encimada sobre el final de la plataforma
+  // DIBUJAR LA RAMPA ENCIMADA
   image(imgRampa, posXRampa, yPlataforma - (altoRampa - altoPlataforma), anchoRampa, altoRampa);
 }
 
@@ -219,7 +202,7 @@ function actualizarCinematica() {
   if (!skaterIntro.saltando) {
     skaterIntro.x += skaterIntro.vx;
 
-    // Cambia de frame cada 8 fotogramas (ajusta el 8 si quieres que corra más rápido/lento)
+    // CAMBIO DE FRAME
     let frameActual = floor(frameCount / 12) % imgSkaterRun.length;
 
     push();
@@ -234,12 +217,12 @@ function actualizarCinematica() {
       skaterIntro.sprayActivo = true;
     }
   } else {
-    // Salto en la rampa
+    // SALTO EN RAMPA
     skaterIntro.x += skaterIntro.vx * 0.6;
     skaterIntro.vy += 0.4;
     skaterIntro.y += skaterIntro.vy;
 
-    // Dibujar la pose de despegue durante el salto de la intro
+    // POSE DE DESPEGUE
     push();
     translate(skaterIntro.x, skaterIntro.y);
     imageMode(CENTER);
@@ -258,7 +241,7 @@ function actualizarCinematica() {
     }
   }
 
-  // Partículas y límites
+  // PARTICULAS Y LIMITES
   for (let i = particulas.length - 1; i >= 0; i--) {
     particulas[i].actualizar();
     particulas[i].mostrar();
@@ -269,21 +252,20 @@ function actualizarCinematica() {
     estadoJuego = "GAMEOVER";
   }
 }
-// ==========================================
-// 6. LÓGICA DEL JUEGO EN EJECUCIÓN
-// ==========================================
+
+//LÓGICA DEL JUEGO
 function actualizarJuego() {
-  // --- Generar nuevas columnas ---
-  if (frameCount % 120 === 0) {
+  // GENERAR COLUMNAS
+  if (frameCount % 120 === 0) {//CADA 120 FRAMES
     columnas.push(new Columna());
   }
 
-  // --- Actualizar y dibujar columnas ---
+  //DIBUJAR COLUMNAS
   for (let i = columnas.length - 1; i >= 0; i--) {
     columnas[i].actualizar();
     columnas[i].mostrar();
 
-    // Contar punto
+    // CONTAR PUNTO
     if (!columnas[i].pasada && columnas[i].x + columnas[i].ancho < jugador.x) {
       columnas[i].pasada = true;
       puntuacion++;
@@ -293,7 +275,7 @@ function actualizarJuego() {
       }
     }
 
-    // Colisión con la columna
+    // COLISION
     if (columnas[i].colisionaCon(jugador)) {
       estadoJuego = "GAMEOVER";
     }
@@ -303,23 +285,22 @@ function actualizarJuego() {
     }
   }
 
-  // --- Actualizar y dibujar partículas ---
+  // MAS PARTICULAS
   for (let i = particulas.length - 1; i >= 0; i--) {
     particulas[i].actualizar();
     particulas[i].mostrar();
     if (particulas[i].estaMuerta()) particulas.splice(i, 1);
   }
 
-  // --- Actualizar y dibujar Jugador ---
+  // JUGADOR
   jugador.actualizar();
   jugador.mostrar();
 
-  // Colisión con agua tóxica
   if (jugador.tocaLimites()) {
     estadoJuego = "GAMEOVER";
   }
 
-  // --- Marcador ---
+  // MARCADOR
   fill(255);
   stroke(0);
   strokeWeight(4);
@@ -336,9 +317,7 @@ function reiniciarJuego() {
   reiniciarCinematica();
 }
 
-// ==========================================
-// 7. PANTALLAS DE INTERFAZ (UI)
-// ==========================================
+// INTERFAZ
 function pantallaInicio() {
   fill(255, 220, 0);
   stroke(0);
@@ -375,9 +354,7 @@ function pantallaGameOver() {
   text("Presiona ESPACIO para intentar de nuevo", width / 2, height / 2 + 75);
 }
 
-// ==========================================
-// 8. CLASE JUGADOR (Skater)
-// ==========================================
+//CLASE JUGADOR
 class Skater {
   constructor() {
     this.x = 120;
@@ -403,10 +380,9 @@ class Skater {
       this.y = 12 + this.tamano / 2;
       this.velocidad = 0;
     }
+  
   }
-
-  // Dentro de la clase Skater:
-mostrar() {
+  mostrar(){
   push();
   translate(this.x, this.y);
 
@@ -416,22 +392,18 @@ mostrar() {
 
   imageMode(CENTER);
 
-  // --- INICIO EFECTO AURA VERDE RADIACTIVA ---
+  // AURA VERDE
   drawingContext.shadowBlur = 30; // Qué tan difusa es el aura (aumenta para más efecto)
   drawingContext.shadowColor = color(50, 255, 50); // Verde neón brillante
-  // --- FIN EFECTO AURA ---
 
-  // Dibujar el personaje grande (90x90)
+  // DIBUJAR PERSONAJE
   if (this.velocidad < 0) {
     image(imgSkaterShoot, 0, 0, 90, 90);
   } else {
     image(imgSkaterDown, 0, 0, 90, 90);
   }
 
-  // --- IMPORTANTE: DESACTIVAR EL AURA para no afectar el resto del juego ---
   drawingContext.shadowBlur = 0;
-  // ------------------------------------------------------------------------
-
   pop();
 }
 
@@ -439,17 +411,15 @@ mostrar() {
     return (this.y + this.tamano / 2 >= height - altoAguaToxica);
   }
 }
-
-// Función auxiliar para dibujar la ilustración del skater
-function dibujarSkaterSprite(px, py) {
-  push();
-  translate(px, py);
-  imageMode(CENTER); // Centra la imagen para rotaciones fluidas
-  
-  // Dibujar la imagen del skater (ajusta el tamaño 50x50 si es necesario)
-  image(imgSkater, 0, 0, 50, 50);
-  pop();
-}
+  function dibujarSkaterSprite(px, py) {
+    push();
+    translate(px, py);
+    imageMode(CENTER); // CENTRA IMAGEN
+    
+    // IMAGEN SKATER
+    image(imgSkater, 0, 0, 50, 50);
+    pop();
+  }
 class Columna {
   constructor() {
     this.ancho = 95; 
@@ -475,25 +445,22 @@ class Columna {
     this.amortiguacion = 0.55; 
     this.altoFijo = 450; 
 
-    // Tuberías superiores (pueden seguir siendo aleatorias)
+    // TUBERIAS DE ARRIBA ALEATORIAS
     let listaTuberiasArriba = [
       imgTuberiaDerechaArriba,
       imgTuberiaDerechaAbajo
     ];
     this.imgTop = random(listaTuberiasArriba);
 
-    // --- PATRÓN ESTRICTO PARA LAS TUBERÍAS INFERIORES ---
-    // Patrón: [derechaAbajo, derechaAbajo, abiertaAbajo]
+    // PATRON APARICION TUBERISAS DE ABAJO
     let patronAbajo = [
       imgTuberiaDerechaAbajo,
       imgTuberiaDerechaAbajo,
       imgTuberiaAbiertaAbajo
     ];
 
-    // Asignamos la imagen según el índice actual del patrón
     this.imgBottom = patronAbajo[indicePatronAbajo];
 
-    // Avanzamos al siguiente elemento y reiniciamos el ciclo al llegar al final (3 elementos)
     indicePatronAbajo = (indicePatronAbajo + 1) % patronAbajo.length;
   }
 
@@ -533,19 +500,19 @@ class Columna {
   }
 
   colisionaCon(p) {
-    // Definimos un margen de tolerancia (en píxeles) para hacer la colisión más justa
-    let margenX = 15; // El skater puede "entrar" 15px en la tubería antes de morir
-    let margenY = 10; // Margen vertical superior/inferior
+    // MARGEN TOLERANCIA
+    let margenX = 15; // PUEDE ENTRAR 15PX ANTES DE MORIR
+    let margenY = 10; // MARGEN VERTICAL
 
-    // Verificamos si el skater cruza la posición horizontal de la columna (con margen)
+    // VERFIICAR SI CRUZA
     let colisionaX = (p.x + p.tamano / 2 - margenX > this.x) && 
                      (p.x - p.tamano / 2 + margenX < this.x + this.ancho);
 
-    // Verificamos si choca con la tubería de arriba o con la de abajo (con margen)
+    // SI CHOCA ARRIBA O ABAJO
     let colisionaY = (p.y - p.tamano / 2 + margenY < this.topY) || 
                      (p.y + p.tamano / 2 - margenY > this.bottomY);
 
-    // Si está en la columna y además toca la parte superior o inferior, hay muerte
+    // VERIFICAR MUERTE
     if (colisionaX && colisionaY) {
       return true;
     }
@@ -553,17 +520,15 @@ class Columna {
     return false;
   }
 }
-// CLASE PARTÍCULA SPRAY (Verde Radiactivo)
+//SPRAY VERDE
 class ParticulaSpray {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    // Dispersión aleatoria realista del spray
+    // DISPERSION
     this.vx = random(-1.5, 1.5);
     this.vy = random(-0.5, 3.5); // Caen ligeramente
-    // Opacidad inicial alta (255) y reducción por frame
     this.alpha = 255; 
-    // Reducción aleatoria de opacidad para que no desaparezcan todas a la vez
     this.decay = random(4, 9); 
     this.tamano = random(5, 12); // Tamaños variados
   }
@@ -575,14 +540,13 @@ class ParticulaSpray {
   }
 
   mostrar() {
-    push(); // Guarda el estado actual del lienzo para que los cambios no afecten a otros objetos
+    push(); // GUARDA EL LIENZO PARA QUE NO AFECTE OTRAS COSAS
     
     noStroke();
     
-    // COLOR VERDE RADIACTIVO: (50, 255, 50) con la opacidad actual
+    // COLOR VERDE RADIACTIVO
     fill(50, 255, 50, this.alpha); 
 
-    // Brillo específico SOLO para esta partícula
     drawingContext.shadowBlur = 5;
     drawingContext.shadowColor = color(50, 255, 50);
 
@@ -599,8 +563,7 @@ class ParticulaSpray {
 function reiniciarCinematica() {
   skaterIntro.x = -60;
   
-  let altoPlataforma = 45; // Debe coincidir con el altoPlataforma de dibujarRampa()
-  // Ajustamos el offset (-20 u otro valor) para que el personaje pise la plataforma
+  let altoPlataforma = 45; 
   skaterIntro.y = height - altoAguaToxica - altoPlataforma - 20; 
   
   skaterIntro.vx = 5.5;
