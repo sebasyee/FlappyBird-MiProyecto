@@ -2,6 +2,7 @@
 let imgFondo;
 let imgRampa;
 let imgTuberia;
+let imgPlataforma;
 
 //ASSETS DE ANIMACION DE CARRERA DE SKATER
 let imgSkaterRun = [];
@@ -9,7 +10,6 @@ let imgSkaterRun = [];
 //IMAGENES DE SKATER EN EL AIRE
 let imgSkaterDespuesSalto;
 let imgSkaterShoot;
-let imgSkaterMid;
 let imgSkaterDown;
 
 function preload() {
@@ -17,6 +17,7 @@ function preload() {
   imgFondo = loadImage('assets/Background_UnderSurface.jpg');
   imgRampa = loadImage('assets/Rampa.png');
   imgTuberia = loadImage('assets/Tuberia_derecha.png');
+  imgPlataforma = loadImage('assets/plataforma.png');
 
   //CARGAR FRAMES DE LA CARRERA
   imgSkaterRun[0] = loadImage('assets/skater_run/skater_run01.png');
@@ -25,7 +26,6 @@ function preload() {
 
   //CARGAR POSES
   imgSkaterShoot = loadImage('assets/skater_shoot.png');
-  imgSkaterMid = loadImage('assets/skater_mid.png');
   imgSkaterDown = loadImage('assets/skater_down.png');
   imgSkaterDespuesSalto = loadImage('assets/Skater_DespuesSalto.png');
 }
@@ -56,7 +56,7 @@ let skaterIntro = {
   angulo: 0,
   sprayActivo: false
 };
-let rampaX = 220;
+let rampaX = 500;
 
 // Sistema de Partículas (Humo/Graffiti de Spray)
 let particulas = [];
@@ -65,6 +65,8 @@ let particulas = [];
 let puntuacion = 0;
 let puntuacionMaxima = 0;
 
+//posición de la rampa  
+let desplazamientoRampaX = 15;
 
 
 // ==========================================
@@ -156,7 +158,24 @@ function renderizarFondo() {
 
 // Rampa
 function dibujarRampa() {
-  image(imgRampa, rampaX, height - 100, 130, 100);
+  let altoPlataforma = 45; 
+  let anchoRampa = 300;     
+  let altoRampa = 100;       
+
+  let yPlataforma = height - altoAguaToxica - altoPlataforma;
+
+  // 1. La plataforma se extiende un poco más allá de rampaX para generar el traslape/encimado
+  let solapamiento = 300; // Píxeles que se meterá la plataforma por debajo de la rampa
+  let anchoPlataformaDibujo = rampaX + solapamiento;
+
+  // Dibujar la plataforma de concreto
+  image(imgPlataforma, 0, yPlataforma, anchoPlataformaDibujo, altoPlataforma + altoAguaToxica);
+
+  // 2. Posición de la rampa controlada con rampaX + desplazamientoRampaX
+  let posXRampa = rampaX + desplazamientoRampaX;
+  
+  // Dibujar la rampa encimada sobre el final de la plataforma
+  image(imgRampa, posXRampa, yPlataforma - (altoRampa - altoPlataforma), anchoRampa, altoRampa);
 }
 
 function actualizarCinematica() {
@@ -166,15 +185,15 @@ function actualizarCinematica() {
     skaterIntro.x += skaterIntro.vx;
 
     // Cambia de frame cada 8 fotogramas (ajusta el 8 si quieres que corra más rápido/lento)
-    let frameActual = floor(frameCount / 10) % imgSkaterRun.length;
+    let frameActual = floor(frameCount / 12) % imgSkaterRun.length;
 
     push();
     translate(skaterIntro.x, skaterIntro.y);
     imageMode(CENTER);
-    image(imgSkaterRun[frameActual], 0, 0, 65, 65); // Dibujar frame actual
+    image(imgSkaterRun[frameActual], 0, 0, 90, 90); // Dibujar frame actual
     pop();
 
-    if (skaterIntro.x >= rampaX) {
+    if (skaterIntro.x >= rampaX + desplazamientoRampaX + 70) {
       skaterIntro.vy = -10;
       skaterIntro.saltando = true;
       skaterIntro.sprayActivo = true;
@@ -189,7 +208,7 @@ function actualizarCinematica() {
     push();
     translate(skaterIntro.x, skaterIntro.y);
     imageMode(CENTER);
-    image(imgSkaterShoot, 0, 0, 65, 65);
+    image(imgSkaterShoot, 0, 0, 90, 90);
     pop();
 
     if (skaterIntro.sprayActivo) {
@@ -328,7 +347,7 @@ class Skater {
   constructor() {
     this.x = 120;
     this.y = height / 2;
-    this.tamano = 32;
+    this.tamano = 45; // Hitbox ligeramente ajustada al nuevo tamaño visual
     this.gravedad = 0.55;
     this.fuerzaSalto = -9.5;
     this.velocidad = 0;
@@ -336,7 +355,6 @@ class Skater {
 
   saltar() {
     this.velocidad = this.fuerzaSalto;
-    // Generar ráfaga de pintura al saltar
     for (let i = 0; i < 6; i++) {
       particulas.push(new ParticulaSpray(this.x - 15, this.y + 10));
     }
@@ -346,39 +364,31 @@ class Skater {
     this.velocidad += this.gravedad;
     this.y += this.velocidad;
 
-    // Frenar suavemente en el techo
     if (this.y - this.tamano / 2 < 12) {
       this.y = 12 + this.tamano / 2;
       this.velocidad = 0;
     }
   }
 
-  // Dentro de la clase Skater:
-mostrar() {
-  push();
-  translate(this.x, this.y);
+  mostrar() {
+    push();
+    translate(this.x, this.y);
 
-  // Inclinación
-  let angulo = map(this.velocidad, -9.5, 10, -radians(25), radians(55));
-  angulo = constrain(angulo, -radians(25), radians(55));
-  rotate(angulo);
+    let angulo = map(this.velocidad, -9.5, 10, -radians(25), radians(55));
+    angulo = constrain(angulo, -radians(25), radians(55));
+    rotate(angulo);
 
-  imageMode(CENTER);
+    imageMode(CENTER);
 
-  // SELECCIONAR IMAGEN SEGÚN EL MOVIMIENTO
-  if (this.velocidad < -3) {
-    // Impulso hacia arriba al presionar Espacio
-    image(imgSkaterShoot, 0, 0, 65, 65);
-  } else if (this.velocidad >= -3 && this.velocidad <= 3) {
-    // Punto medio del salto / Planeando
-    image(imgSkaterMid, 0, 0, 65, 65);
-  } else {
-    // Caída en picada por la gravedad
-    image(imgSkaterDown, 0, 0, 65, 65);
+    // Solo 2 estados: subiendo (shoot) o cayendo (down), con tamaño grande (90x90)
+    if (this.velocidad < 0) {
+      image(imgSkaterShoot, 0, 0, 90, 90);
+    } else {
+      image(imgSkaterDown, 0, 0, 90, 90);
+    }
+
+    pop();
   }
-
-  pop();
-}
 
   tocaLimites() {
     return (this.y + this.tamano / 2 >= height - altoAguaToxica);
@@ -396,7 +406,7 @@ function dibujarSkaterSprite(px, py) {
   pop();
 }
 // ==========================================
-// 9. CLASE COLUMNA (Tuberías Oxidadas que se Cierran y Rebotan)
+// CLASE COLUMNA (Ambas tuberías fijas en escala, sin flotar ni estirarse)
 // ==========================================
 class Columna {
   constructor() {
@@ -405,69 +415,80 @@ class Columna {
     this.velocidad = 3.8;
     this.pasada = false;
 
-    this.espacioInicial = 210;
-    this.espacioFinal = 125;
-    this.espacioActual = this.espacioInicial;
+    // Espacio libre por donde cruza el jugador
+    this.espacioApertura = 130;
 
-    this.centroHueco = random(90, height - altoAguaToxica - 90);
+    // Determinamos el centro del hueco
+    let centroHueco = random(100, height - altoAguaToxica - 100);
+    
+    // Posiciones meta finales (Y superior e Y inferior)
+    this.topMeta = centroHueco - (this.espacioApertura / 2);
+    this.bottomY = centroHueco + (this.espacioApertura / 2); // Posición donde inicia la apertura inferior
 
-    // Física de cierre y rebote
-    this.velocidadCierre = 0;
-    this.fuerzaCierre = 0.15;
-    this.amortiguacion = 0.72;
-    this.enRebote = false;
+    // --- FÍSICA DE CAÍDA DE LA TUBERÍA SUPERIOR ---
+    this.topY = -350; 
+    this.vyTop = 0;           
+    this.gravedadTop = 0.6;    
+    this.impactado = false;
 
-    this.top = 0;
-    this.bottom = 0;
+    this.fuerzaResorte = 0.25; 
+    this.amortiguacion = 0.55; 
+
+    // Altura fija de las imágenes para evitar deformación y espacios vacíos
+    this.altoFijo = 450; 
   }
 
   actualizar() {
+    // 1. Movimiento horizontal
     this.x -= this.velocidad;
 
-    // Cierre progresivo al acercarse
-    if (this.espacioActual > this.espacioFinal && !this.enRebote) {
-      this.espacioActual -= 1.6;
-      if (this.espacioActual <= this.espacioFinal) {
-        this.espacioActual = this.espacioFinal;
-        this.enRebote = true;
-        this.velocidadCierre = -3.5; // Impulso de rebote
+    // 2. Caída e impacto de la tubería superior
+    if (!this.impactado) {
+      this.vyTop += this.gravedadTop;
+      this.topY += this.vyTop;
+
+      if (this.topY >= this.topMeta) {
+        this.topY = this.topMeta;
+        this.vyTop = -this.vyTop * 0.45; // Rebote de impacto seco
+        this.impactado = true;
       }
+    } else {
+      // Física de resorte post-impacto
+      let delta = this.topY - this.topMeta;
+      let fuerza = -this.fuerzaResorte * delta;
+      this.vyTop += fuerza;
+      this.vyTop *= this.amortiguacion;
+      this.topY += this.vyTop;
     }
-
-    // Efecto elástico (Spring Physics)
-    if (this.enRebote) {
-      let delta = this.espacioActual - this.espacioFinal;
-      let fuerza = -this.fuerzaCierre * delta;
-      this.velocidadCierre += fuerza;
-      this.velocidadCierre *= this.amortiguacion;
-      this.espacioActual += this.velocidadCierre;
-    }
-
-    this.top = this.centroHueco - (this.espacioActual / 2);
-    this.bottom = height - (this.centroHueco + (this.espacioActual / 2));
   }
 
   mostrar() {
-  // Tubería Superior
-  image(imgTuberia, this.x, 0, this.ancho, this.top);
-  
-  // Tubería Inferior
-  image(imgTuberia, this.x, height - this.bottom, this.ancho, this.bottom);
-}
+    // A. TUBERÍA SUPERIOR (Se dibuja desde topY hacia arriba)
+    push();
+    image(imgTuberia, this.x, this.topY - this.altoFijo, this.ancho, this.altoFijo);
+    pop();
+
+    // B. TUBERÍA INFERIOR (Fija: inicia en bottomY y se extiende hacia abajo pasando el borde del canvas)
+    push();
+    // Al darle un alto de this.altoFijo (450px), la imagen sobrepasa holgadamente el límite inferior de la pantalla
+    image(imgTuberia, this.x, this.bottomY, this.ancho, this.altoFijo);
+    pop();
+  }
+
   estaFuera() {
     return (this.x + this.ancho < 0);
   }
 
   colisionaCon(p) {
     if (p.x + p.tamano / 2 > this.x && p.x - p.tamano / 2 < this.x + this.ancho) {
-      if (p.y - p.tamano / 2 < this.top || p.y + p.tamano / 2 > height - this.bottom) {
+      // Colisión precisa usando las coordenadas Y reales del hueco (topY y bottomY)
+      if (p.y - p.tamano / 2 < this.topY || p.y + p.tamano / 2 > this.bottomY) {
         return true;
       }
     }
     return false;
   }
 }
-
 // ==========================================
 // 10. CLASE PARTICULA SPRAY (Efecto de Impulso)
 // ==========================================
@@ -506,8 +527,12 @@ class ParticulaSpray {
   }
 }
 function reiniciarCinematica() {
-  skaterIntro.x = -50;
-  skaterIntro.y = height - altoAguaToxica - 15;
+  skaterIntro.x = -60;
+  
+  let altoPlataforma = 45; // Debe coincidir con el altoPlataforma de dibujarRampa()
+  // Ajustamos el offset (-20 u otro valor) para que el personaje pise la plataforma
+  skaterIntro.y = height - altoAguaToxica - altoPlataforma - 20; 
+  
   skaterIntro.vx = 5.5;
   skaterIntro.vy = 0;
   skaterIntro.enRampa = false;
