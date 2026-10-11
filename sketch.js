@@ -56,7 +56,7 @@ let skaterIntro = {
   angulo: 0,
   sprayActivo: false
 };
-let rampaX = 500;
+let rampaX = 400;
 
 // Sistema de Partículas (Humo/Graffiti de Spray)
 let particulas = [];
@@ -119,32 +119,25 @@ function keyPressed() {
 // 4. FONDO Y AMBIENTACIÓN (Alcantarillas NY)
 // ==========================================
 
-function renderizarFondo() {
-  // Fondo gris neutro para pruebas (puedes ajustar el 100 a otro número entre 0 y 255)
-  background(100);
 
-  // Mantenemos el agua tóxica animada en el suelo para seguir probando colisiones
-  offsetAgua += 0.05;
-  noStroke();
-  fill(50, 205, 50, 200); // Verde tóxico
-
-  beginShape();
-  vertex(0, height);
-  for (let x = 0; x <= width; x += 20) {
-    let y = height - altoAguaToxica + sin(offsetAgua + x * 0.05) * 4;
-    vertex(x, y);
-  }
-  vertex(width, height);
-  endShape(CLOSE);
-}
 // Fondo oculto mientras hago pruebas
-/*function renderizarFondo() {
-  image(imgFondo, 0, 0, width, height);
+function renderizarFondo() {
+   image(imgFondo, 0, 0, width, height);
 
-  // Mantenemos el agua tóxica sobre el fondo
+  // 2. CAPA DE OSCURIDAD / POCA LUZ (Overlay oscuro)
+  // El último parámetro (150) es la opacidad: más alto = más oscuro (0 a 255)
+  fill(10, 15, 20, 160); 
+  rect(0, 0, width, height);
+
+  // 3. Agua tóxica (resalta más en la oscuridad)
   offsetAgua += 0.05;
   noStroke();
-  fill(50, 205, 50, 200);
+
+  // Brillo sutil para el agua en la penumbra
+  drawingContext.shadowBlur = 15;
+  drawingContext.shadowColor = color(50, 255, 50);
+
+  fill(40, 220, 50, 210); // Verde neón tóxico
 
   beginShape();
   vertex(0, height);
@@ -154,7 +147,10 @@ function renderizarFondo() {
   }
   vertex(width, height);
   endShape(CLOSE);
-}*/
+
+  // Desactivar el brillo para el resto de los elementos que se dibujen después
+  drawingContext.shadowBlur = 0;
+}
 
 // Rampa
 function dibujarRampa() {
@@ -370,25 +366,35 @@ class Skater {
     }
   }
 
-  mostrar() {
-    push();
-    translate(this.x, this.y);
+  // Dentro de la clase Skater:
+mostrar() {
+  push();
+  translate(this.x, this.y);
 
-    let angulo = map(this.velocidad, -9.5, 10, -radians(25), radians(55));
-    angulo = constrain(angulo, -radians(25), radians(55));
-    rotate(angulo);
+  let angulo = map(this.velocidad, -9.5, 10, -radians(25), radians(55));
+  angulo = constrain(angulo, -radians(25), radians(55));
+  rotate(angulo);
 
-    imageMode(CENTER);
+  imageMode(CENTER);
 
-    // Solo 2 estados: subiendo (shoot) o cayendo (down), con tamaño grande (90x90)
-    if (this.velocidad < 0) {
-      image(imgSkaterShoot, 0, 0, 90, 90);
-    } else {
-      image(imgSkaterDown, 0, 0, 90, 90);
-    }
+  // --- INICIO EFECTO AURA VERDE RADIACTIVA ---
+  drawingContext.shadowBlur = 30; // Qué tan difusa es el aura (aumenta para más efecto)
+  drawingContext.shadowColor = color(50, 255, 50); // Verde neón brillante
+  // --- FIN EFECTO AURA ---
 
-    pop();
+  // Dibujar el personaje grande (90x90)
+  if (this.velocidad < 0) {
+    image(imgSkaterShoot, 0, 0, 90, 90);
+  } else {
+    image(imgSkaterDown, 0, 0, 90, 90);
   }
+
+  // --- IMPORTANTE: DESACTIVAR EL AURA para no afectar el resto del juego ---
+  drawingContext.shadowBlur = 0;
+  // ------------------------------------------------------------------------
+
+  pop();
+}
 
   tocaLimites() {
     return (this.y + this.tamano / 2 >= height - altoAguaToxica);
@@ -489,43 +495,50 @@ class Columna {
     return false;
   }
 }
-// ==========================================
-// 10. CLASE PARTICULA SPRAY (Efecto de Impulso)
-// ==========================================
+
+// CLASE PARTÍCULA SPRAY (Verde Radiactivo)
 class ParticulaSpray {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.vx = random(-4, -1.5);
-    this.vy = random(-1.5, 1.5);
-    this.alpha = 245;
-    this.tamano = random(6, 12);
-    // Colores tipo pintura graffiti (Rosa magenta, Cyan, Amarillo)
-    let colores = [
-      color(255, 0, 128),
-      color(0, 220, 255),
-      color(255, 230, 0)
-    ];
-    this.col = random(colores);
+    // Dispersión aleatoria realista del spray
+    this.vx = random(-1.5, 1.5);
+    this.vy = random(-0.5, 3.5); // Caen ligeramente
+    // Opacidad inicial alta (255) y reducción por frame
+    this.alpha = 255; 
+    // Reducción aleatoria de opacidad para que no desaparezcan todas a la vez
+    this.decay = random(4, 9); 
+    this.tamano = random(5, 12); // Tamaños variados
   }
 
   actualizar() {
     this.x += this.vx;
     this.y += this.vy;
-    this.alpha -= 9;
+    this.alpha -= this.decay; // Se desvanecen
   }
 
   mostrar() {
+    push(); // Guarda el estado actual del lienzo para que los cambios no afecten a otros objetos
+    
     noStroke();
-    this.col.setAlpha(this.alpha);
-    fill(this.col);
+    
+    // COLOR VERDE RADIACTIVO: (50, 255, 50) con la opacidad actual
+    fill(50, 255, 50, this.alpha); 
+
+    // Brillo específico SOLO para esta partícula
+    drawingContext.shadowBlur = 5;
+    drawingContext.shadowColor = color(50, 255, 50);
+
     ellipse(this.x, this.y, this.tamano);
+
+    pop(); // Restaura el estado del lienzo, apagando automáticamente la sombra para el siguiente elemento
   }
 
   estaMuerta() {
-    return this.alpha <= 0;
+    return this.alpha < 0;
   }
 }
+
 function reiniciarCinematica() {
   skaterIntro.x = -60;
   
